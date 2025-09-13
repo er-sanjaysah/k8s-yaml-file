@@ -1,0 +1,63 @@
+# blue-deployment.yaml (Nginx)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-blue
+  namespace: blue-green-poc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+      version: blue
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: blue
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.21
+        ports:
+        - containerPort: 80
+---
+# green-deployment.yaml (Tomcat)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-green
+  namespace: blue-green-poc
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp
+      version: green
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: green
+    spec:
+      containers:
+      - name: httpd
+        image: httpd:2.4
+        ports:
+        - containerPort: 8080
+---
+# main service (initially points to Blue)
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+  namespace: blue-green-poc
+spec:
+  type: NodePort
+  selector:
+    app: myapp
+    version: blue   # 🔹 Change to "green" when switching
+  ports:
+  - port: 80
+    targetPort: 80   # works with Nginx (80) and Tomcat (8080, will map automatically)
+    nodePort: 30080  # fixed NodePort (choose between 30000–32767)
